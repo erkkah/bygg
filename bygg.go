@@ -23,36 +23,36 @@ import (
 	"time"
 )
 
-var config struct {
-	verbose bool
-	dryRun  bool
-	baseDir string
-	byggFil string
+func parseConfig(args []string) (cfg config) {
+	var fs flag.FlagSet
+
+	fs.StringVar(&cfg.byggFil, "f", "byggfil", "Bygg file")
+	fs.BoolVar(&cfg.dryRun, "n", false, "Performs a dry run")
+	fs.BoolVar(&cfg.verbose, "v", false, "Verbose")
+	fs.StringVar(&cfg.baseDir, "C", ".", "Base dir")
+	_ = fs.Parse(args)
+
+	targets := fs.Args()
+	if len(targets) > 0 {
+		cfg.target = targets[0]
+	} else {
+		cfg.target = "all"
+	}
+
+	return
 }
 
 func main() {
-	flag.StringVar(&config.byggFil, "f", "byggfil", "Bygg file")
-	flag.BoolVar(&config.dryRun, "n", false, "Performs a dry run")
-	flag.BoolVar(&config.verbose, "v", false, "Verbose")
-	flag.StringVar(&config.baseDir, "C", ".", "Base dir")
-	flag.Parse()
+	cfg := parseConfig(os.Args)
 
-	tgt := "all"
-
-	args := flag.Args()
-	if len(args) > 0 {
-		tgt = args[0]
-	}
-
-	verbose("Building target %q", tgt)
-
-	b, err := newBygg(config.baseDir)
+	b, err := newBygg(cfg)
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		os.Exit(1)
 	}
 
-	err = b.buildTarget(tgt)
+	b.verbose("Building target %q", cfg.target)
+	err = b.buildTarget(cfg.target)
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		os.Exit(1)
@@ -70,18 +70,28 @@ type target struct {
 
 type bygge struct {
 	lastError error
+	output    io.Writer
 
 	targets map[string]target
 	vars    map[string]string
 	env     map[string]string
 	visited map[string]bool
 	tmpl    *template.Template
-	dir     string
+
+	cfg config
 }
 
-func newBygg(dir string) (*bygge, error) {
+type config struct {
+	verbose bool
+	dryRun  bool
+	baseDir string
+	byggFil string
+	target  string
+}
+
+func newBygg(cfg config) (*bygge, error) {
 	pwd, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
+	if err := os.Chdir(cfg.baseDir); err != nil {
 		return nil, err
 	}
 	defer os.Chdir(pwd)
@@ -91,7 +101,8 @@ func newBygg(dir string) (*bygge, error) {
 		vars:    map[string]string{},
 		env:     map[string]string{},
 		visited: map[string]bool{},
-		dir:     dir,
+		output:  os.Stdout,
+		cfg:     cfg,
 	}
 
 	for _, pair := range os.Environ() {
@@ -105,7 +116,7 @@ func newBygg(dir string) (*bygge, error) {
 				cmd := exec.Command(prog, args...)
 				cmd.Env = b.envList()
 				var output []byte
-				output, b.lastError = cmd.Output()
+				output, b.lastError = cmd.CombinedOutput()
 				return string(output)
 			},
 			"ok": func() bool {
@@ -120,16 +131,16 @@ func newBygg(dir string) (*bygge, error) {
 		}
 	}
 
-	result.tmpl = template.New(config.byggFil)
+	result.tmpl = template.New(cfg.byggFil)
 	result.tmpl.Funcs(getFunctions(result))
 
-	verbose("Parsing template")
-	if !exists(config.byggFil) {
-		return nil, fmt.Errorf("bygg file %q not found", config.byggFil)
+	result.verbose("Parsing template")
+	if !exists(cfg.byggFil) {
+		return nil, fmt.Errorf("bygg file %q not found", cfg.byggFil)
 	}
 	var err error
 
-	if result.tmpl, err = result.tmpl.ParseFiles(config.byggFil); err != nil {
+	if result.tmpl, err = result.tmpl.ParseFiles(cfg.byggFil); err != nil {
 		return nil, fmt.Errorf("failed to parse templates: %w", err)
 	}
 	return result, nil
@@ -137,7 +148,7 @@ func newBygg(dir string) (*bygge, error) {
 
 func (b *bygge) buildTarget(tgt string) error {
 	pwd, _ := os.Getwd()
-	if err := os.Chdir(b.dir); err != nil {
+	if err := os.Chdir(b.cfg.baseDir); err != nil {
 		return err
 	}
 	defer os.Chdir(pwd)
@@ -149,13 +160,13 @@ func (b *bygge) buildTarget(tgt string) error {
 		"env":       b.env,
 	}
 
-	verbose("Executing template")
+	b.verbose("Executing template")
 	var buf bytes.Buffer
 	if err := b.tmpl.Execute(&buf, data); err != nil {
 		return err
 	}
 
-	verbose("Loading build script")
+	b.verbose("Loading build script")
 	if err := b.loadBuildScript(&buf); err != nil {
 		return err
 	}
@@ -197,7 +208,7 @@ func (b *bygge) loadBuildScript(scriptSource io.Reader) error {
 		}
 		// Handle message lines
 		if strings.HasPrefix(line, "<<") {
-			fmt.Println(b.expand(strings.Trim(line[2:], " \t")))
+			fmt.Fprintln(b.output, b.expand(strings.Trim(line[2:], " \t")))
 			continue
 		}
 
@@ -299,8 +310,6 @@ func (b *bygge) expand(expr string) string {
 				if local, ok := b.env[name]; ok {
 					return local
 				}
-				return os.Getenv(name)
-
 			}
 			return ""
 		}
@@ -313,7 +322,7 @@ func (b *bygge) resolve(t target) error {
 		return nil
 	}
 
-	verbose("Resolving target %q", t.name)
+	b.verbose("Resolving target %q", t.name)
 	if b.visited[t.name] {
 		return fmt.Errorf("cyclic dependency resolving %q", t.name)
 	}
@@ -348,7 +357,7 @@ func (b *bygge) resolve(t target) error {
 
 	if t.force || !exists(t.name) || getFileDate(t.name).Before(mostRecentUpdate) {
 		for _, cmd := range t.buildCommands {
-			if err := b.build(t.name, cmd); err != nil {
+			if err := b.runBuildCommand(t.name, cmd); err != nil {
 				return err
 			}
 		}
@@ -367,8 +376,8 @@ func (b *bygge) resolve(t target) error {
 	return nil
 }
 
-func (b *bygge) build(tgt, command string) error {
-	if config.dryRun {
+func (b *bygge) runBuildCommand(tgt, command string) error {
+	if b.cfg.dryRun {
 		fmt.Printf("Not running command %q\n", command)
 		return nil
 	}
@@ -378,39 +387,28 @@ func (b *bygge) build(tgt, command string) error {
 	}
 	prog := parts[0]
 	args := parts[1:]
-	verbose("Running command %q with args %v", prog, args)
+	b.verbose("Running command %q with args %v", prog, args)
 	if prog == "<<" {
-		fmt.Println(strings.Join(args, " "))
+		fmt.Fprintln(b.output, strings.Join(args, " "))
 		return nil
 	}
 	if prog == "bygg" {
-		byggDir := "."
-		byggTarget := "all"
-		if len(args) > 0 {
-			if args[0] == "-C" {
-				if len(args) < 2 {
-					return fmt.Errorf("invalid bygg arguments")
-				}
-				byggDir = args[1]
-				args = args[2:]
-			}
-			if len(args) == 2 {
-				byggTarget = args[1]
-			}
-		}
-		bb, err := newBygg(byggDir)
+		cfg := parseConfig(args)
+		bb, err := newBygg(cfg)
+		bb.output = b.output
 		if err != nil {
 			return err
 		}
-		return bb.buildTarget(byggTarget)
+		return bb.buildTarget(cfg.target)
 	}
 	if strings.HasPrefix(prog, "http") {
-		return handleDownload(tgt, prog, args...)
+		return b.handleDownload(tgt, prog, args...)
 	}
 	cmd := exec.Command(prog, args...)
 	cmd.Env = b.envList()
-	output, err := cmd.CombinedOutput()
-	fmt.Print(string(output))
+	cmd.Stderr = b.output
+	cmd.Stdout = b.output
+	err = cmd.Run()
 	return err
 }
 
@@ -422,8 +420,8 @@ func (b *bygge) envList() []string {
 	return env
 }
 
-func verbose(pattern string, args ...interface{}) {
-	if config.verbose {
+func (b *bygge) verbose(pattern string, args ...interface{}) {
+	if b.cfg.verbose {
 		fmt.Printf("bygg: "+pattern+"\n", args...)
 	}
 }
@@ -464,6 +462,9 @@ func splitQuoted(quoted string) ([]string, error) {
 			}
 			escapeNext = false
 		default:
+			if escapeNext && char == "n" {
+				char = "\n"
+			}
 			builder.WriteString(char)
 			escapeNext = false
 		}
@@ -490,8 +491,8 @@ func getFileDate(target string) time.Time {
 	return fileInfo.ModTime()
 }
 
-func handleDownload(target string, url string, checksum ...string) error {
-	verbose("Downloading %s", url)
+func (b *bygge) handleDownload(target string, url string, checksum ...string) error {
+	b.verbose("Downloading %s", url)
 	req, err := http.NewRequest(http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return err
@@ -508,7 +509,7 @@ func handleDownload(target string, url string, checksum ...string) error {
 	}
 	defer response.Body.Close()
 	if response.StatusCode == http.StatusNotModified {
-		verbose("%s unmodified, skipping download", url)
+		b.verbose("%s unmodified, skipping download", url)
 		return nil
 	}
 
@@ -539,7 +540,11 @@ func handleDownload(target string, url string, checksum ...string) error {
 	}
 	_, _ = tmpFile.Seek(0, 0)
 
-	if len(checksum) > 0 && strings.HasPrefix(checksum[0], "md5:") {
+	if len(checksum) > 0 {
+		if !strings.HasPrefix(checksum[0], "md5:") {
+			return fmt.Errorf("checksum must start with \"md5:\"")
+		}
+
 		hash := md5.New()
 		if _, err = io.Copy(hash, tmpFile); err != nil {
 			return err
