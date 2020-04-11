@@ -43,7 +43,7 @@ func parseConfig(args []string) (cfg config) {
 }
 
 func main() {
-	cfg := parseConfig(os.Args)
+	cfg := parseConfig(os.Args[1:])
 
 	b, err := newBygg(cfg)
 	if err != nil {
