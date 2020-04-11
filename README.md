@@ -1,3 +1,5 @@
+![bygg! logo](icon.png)
+
 # bygg!
 
 This is an attempt to get a portable way of building [Letarette](https://letarette.io), but it should work well for other `go` projects with similar needs.
@@ -5,9 +7,9 @@ This is an attempt to get a portable way of building [Letarette](https://letaret
 Letarette is a `go` project, but since it relies heavily on `sqlite3`, a C compiler is required. Also, the stemming is done by the `Snowball` C library which comes with a Makefile - based build.
 
 I started out using `make` and `bash`, which worked fine for a while.
-I went through a couple of iterations before the Linux and Mac builds worked the same, but when I got to Windows, I hit a wall.
+It was a couple of iterations before the Linux and Mac builds worked the same, but when I got to Windows, I hit a wall.
 
-So, I started thinking - could I script the build process in `go` ?
+So, I started thinking - could I script the build process in `go` instead?
 
 As usual, I let it grow a little bit too far. But - it's still just about 600 lines, including comments, and has no external dependencies.
 
@@ -23,7 +25,13 @@ A build is started by running the tool in the directory containing the `byggfil`
 Since it is a single-file no-dependencies tool, running using `go run` is fast enough:
 
 ```
-$ go run ./bygg
+$ go run github.com/erkkah/bygg
+```
+
+You can of course also install the tool to get even faster startup times:
+
+```
+$ go get -u github.com/erkkah/bygg
 ```
 
 In Letarette, there is an `autoexec.go` file at the root of the project with a `go:generate` line that starts the build:
@@ -31,7 +39,7 @@ In Letarette, there is an `autoexec.go` file at the root of the project with a `
 ```go
 // bygg! entry point, just run "go generate" to build Letarette.
 
-//go:generate go run ./bygg
+//go:generate go run github.com/erkkah/bygg
 
 package letarette
 ```
@@ -83,13 +91,13 @@ Except for the special cases described below, build commands are external binari
 
 #### Child builds
 
-A child `bygg` build can be run as expected:
+A child build can be run by using the internal `bygg` command:
 
 ```
 target <- bygg -C ./path/to/submodule
 ```
 
-There is nothing stopping you from running endless build loops using child builds.
+There is nothing stopping you from running endless build loops using child builds. Have fun with that!
 
 #### Downloads
 
@@ -109,7 +117,7 @@ The special build operator `<<` prints the rest of the line to stdout:
 parser-gen << Building the parser generator now!
 ```
 
-The `<<` operator can also be used by itself, outside of build commands. In this case the output will be printed while interpreting, before targets are resolved.
+The `<<` operator can also be used by itself, outside of build commands. In this case the output will be printed while interpreting, before target build commands are run.
 
 ```
 << Starting build {{date "2006-01-02 15:04:05"}}
@@ -124,8 +132,12 @@ CFLAGS = -O2
 CFLAGS += -Wall
 ```
 
-Using `+=` to add a value to a variable will add a space between the old value and the addition.
-This can be avoided using variable interpolation.
+Using `+=` to add to a variable will put a space between the old value and the addition.
+This can be avoided using variable interpolation:
+
+```
+env.PATH = ${env.PATH}:/opt/frink/bin
+```
 
 Environment variables live in the `env` namespace:
 
@@ -133,7 +145,7 @@ Environment variables live in the `env` namespace:
 env.CC = gcc
 ```
 
-Variable interpolation looks familiar, and works in both lvalues and rvalues:
+Variable interpolation uses familiar `$` - syntax, with or without curly brackes, and works in both lvalues and rvalues:
 
 ```
 ${MY_TARGET}: dependency $OBJFILES
@@ -142,7 +154,7 @@ ${MY_TARGET}: dependency $OBJFILES
 ### Template execution
 
 Before the build script is interpreted, it is run through the `go` [text template engine.](https://golang.org/pkg/text/template/)
-This makes it possible to to do things like:
+This makes it possible to do things like:
 
 ```
 REV = dev
@@ -157,14 +169,14 @@ REV = dev
 << $repoState
 ```
 
-The rendering data object is a map containing the environment and current `go` version:
+The template data object is a map containing the environment and current `go` version:
 
 ```
 << Running in go version {{.GOVERSION}}
 << PATH is set to {{.env.PATH}}
 ```
 
-In addition to the [standard functions](https://golang.org/pkg/text/template/#hdr-Functions), `bygg` adds the following: 
+In addition to the [standard functions](https://golang.org/pkg/text/template/#hdr-Functions), `bygg` adds the following:
 
 #### exec
 Returns the output of running the command specified by the first argument, with the rest of the arguments as command line arguments.
@@ -179,6 +191,8 @@ The format is passed directly to the `go` date formatter:
 ```
 {{date "2006-01-02"}}
 ```
+
+Remember the [magic date string](https://golang.org/pkg/time/#Time.Format): `Mon Jan 2 15:04:05 -0700 MST 2006`.
 
 #### split
 Returns a slice of strings by splitting its argument by spaces.
