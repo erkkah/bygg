@@ -1,0 +1,23 @@
+# Simple dependency chain
+A: B
+
+B: C D
+B << "där"
+
+C: D
+C << "och"
+
+D << "Här"
+
+# Variable target
+TARGET = X
+$TARGET << bullseye
+
+Forced: !
+Forced << Forced
+
+# Depends on variables.bygg, not an explicit target
+dependencies.bygg: variables.bygg
+
+# This file exists, so should never be printed
+dependencies.bygg << No!

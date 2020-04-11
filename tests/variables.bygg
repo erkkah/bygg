@@ -1,0 +1,13 @@
+message = hello
+message += world
+A << $message
+
+B << ${message}wide
+
+C << "I say: ${message} to you all!"
+
+env.HOME += "is where the heart is"
+
+D << ${env.HOME}
+
+E << ${env.kawonka92_unlikely_this_is_set}
