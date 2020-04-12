@@ -412,6 +412,117 @@ func (b *bygge) runBuildCommand(tgt, command string) error {
 	return err
 }
 
+func (b *bygge) handleDownload(target string, url string, checksum ...string) error {
+	if !(strings.HasSuffix(url, ".tar") || strings.HasSuffix(url, ".tar.gz") || strings.HasSuffix(url, "tgz")) {
+		return fmt.Errorf("Unsupported file: %v", url)
+	}
+
+	b.verbose("Downloading %s", url)
+	req, err := http.NewRequest(http.MethodGet, url, http.NoBody)
+	if err != nil {
+		return err
+	}
+
+	targetDate := getFileDate(target).In(time.FixedZone("GMT", 0))
+	if !targetDate.IsZero() {
+		req.Header.Set("If-Modified-Since", targetDate.Format(time.RFC1123))
+	}
+
+	response, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	if response.StatusCode == http.StatusNotModified {
+		b.verbose("%s unmodified, skipping download", url)
+		return nil
+	}
+
+	modified := response.Header.Get("Last-Modified")
+	var modificationDate time.Time
+	if modified != "" {
+		modificationDate, err = time.Parse(time.RFC1123, modified)
+		if err != nil {
+			modificationDate = time.Time{}
+		}
+	}
+
+	if err = os.MkdirAll(target, 0770); err != nil {
+		return err
+	}
+
+	tmpFile, err := ioutil.TempFile(os.TempDir(), target)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = tmpFile.Close()
+		_ = os.Remove(tmpFile.Name())
+	}()
+
+	if _, err = io.Copy(tmpFile, response.Body); err != nil {
+		return err
+	}
+	_, _ = tmpFile.Seek(0, 0)
+
+	if len(checksum) > 0 {
+		if !strings.HasPrefix(checksum[0], "md5:") {
+			return fmt.Errorf("checksum must start with \"md5:\"")
+		}
+
+		hash := md5.New()
+		if _, err = io.Copy(hash, tmpFile); err != nil {
+			return err
+		}
+		sum := fmt.Sprintf("md5:%x", hash.Sum(nil))
+		if sum != checksum[0] {
+			return fmt.Errorf("checksum verification failed for %q", url)
+		}
+		_, _ = tmpFile.Seek(0, 0)
+	}
+
+	var reader io.Reader = tmpFile
+	if strings.HasSuffix(url, "gz") {
+		if reader, err = gzip.NewReader(reader); err != nil {
+			return err
+		}
+	}
+
+	tarReader := tar.NewReader(reader)
+
+	for {
+		hdr, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		}
+		finfo := hdr.FileInfo()
+
+		switch {
+		case finfo.IsDir():
+			dir := path.Join(target, hdr.Name)
+			if err = os.MkdirAll(dir, finfo.Mode()); err != nil {
+				return err
+			}
+		case finfo.Mode().IsRegular():
+			dest, err := os.Create(path.Join(target, hdr.Name))
+			if err != nil {
+				return err
+			}
+			if _, err = io.Copy(dest, tarReader); err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("unsupported file type: %v", finfo.Mode().String())
+		}
+	}
+
+	if !modificationDate.IsZero() {
+		_ = os.Chtimes(target, modificationDate, modificationDate)
+	}
+
+	return nil
+}
+
 func (b *bygge) envList() []string {
 	env := []string{}
 	for k, v := range b.env {
@@ -489,115 +600,4 @@ func getFileDate(target string) time.Time {
 		return time.Time{}
 	}
 	return fileInfo.ModTime()
-}
-
-func (b *bygge) handleDownload(target string, url string, checksum ...string) error {
-	b.verbose("Downloading %s", url)
-	req, err := http.NewRequest(http.MethodGet, url, http.NoBody)
-	if err != nil {
-		return err
-	}
-
-	targetDate := getFileDate(target).In(time.FixedZone("GMT", 0))
-	if !targetDate.IsZero() {
-		req.Header.Set("If-Modified-Since", targetDate.Format(time.RFC1123))
-	}
-
-	response, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-	if response.StatusCode == http.StatusNotModified {
-		b.verbose("%s unmodified, skipping download", url)
-		return nil
-	}
-
-	modified := response.Header.Get("Last-Modified")
-	var modificationDate time.Time
-	if modified != "" {
-		modificationDate, err = time.Parse(time.RFC1123, modified)
-		if err != nil {
-			modificationDate = time.Time{}
-		}
-	}
-
-	if err = os.MkdirAll(target, 0770); err != nil {
-		return err
-	}
-
-	tmpFile, err := ioutil.TempFile(os.TempDir(), target)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = tmpFile.Close()
-		_ = os.Remove(tmpFile.Name())
-	}()
-
-	if _, err = io.Copy(tmpFile, response.Body); err != nil {
-		return err
-	}
-	_, _ = tmpFile.Seek(0, 0)
-
-	if len(checksum) > 0 {
-		if !strings.HasPrefix(checksum[0], "md5:") {
-			return fmt.Errorf("checksum must start with \"md5:\"")
-		}
-
-		hash := md5.New()
-		if _, err = io.Copy(hash, tmpFile); err != nil {
-			return err
-		}
-		sum := fmt.Sprintf("md5:%x", hash.Sum(nil))
-		if sum != checksum[0] {
-			return fmt.Errorf("checksum verification failed for %q", url)
-		}
-		_, _ = tmpFile.Seek(0, 0)
-	}
-
-	var reader io.Reader = tmpFile
-	if strings.HasSuffix(url, "gz") {
-		if reader, err = gzip.NewReader(reader); err != nil {
-			return err
-		}
-	}
-
-	if strings.HasSuffix(url, ".tar") || strings.HasSuffix(url, ".tar.gz") || strings.HasSuffix(url, "tgz") {
-		tarReader := tar.NewReader(reader)
-
-		for {
-			hdr, err := tarReader.Next()
-			if err == io.EOF {
-				break
-			}
-			finfo := hdr.FileInfo()
-
-			switch {
-			case finfo.IsDir():
-				dir := path.Join(target, hdr.Name)
-				if err = os.MkdirAll(dir, finfo.Mode()); err != nil {
-					return err
-				}
-			case finfo.Mode().IsRegular():
-				dest, err := os.Create(path.Join(target, hdr.Name))
-				if err != nil {
-					return err
-				}
-				if _, err = io.Copy(dest, tarReader); err != nil {
-					return err
-				}
-			default:
-				return fmt.Errorf("unsupported file type: %v", finfo.Mode().String())
-			}
-		}
-	} else {
-		return fmt.Errorf("unsupported file: %v", url)
-	}
-
-	if !modificationDate.IsZero() {
-		_ = os.Chtimes(target, modificationDate, modificationDate)
-	}
-
-	return nil
 }
