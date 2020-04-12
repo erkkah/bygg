@@ -3,6 +3,8 @@
 ## [0.1.1] - 2020-04-12
 ### Fixed
 - Fail early on unsupported downloads
+### Added
+- Very verbose mode - printing generated script
 
 ## [0.1.0] - 2020-04-12
 ### First public release
