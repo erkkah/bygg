@@ -29,8 +29,13 @@ func parseConfig(args []string) (cfg config) {
 	fs.StringVar(&cfg.byggFil, "f", "byggfil", "Bygg file")
 	fs.BoolVar(&cfg.dryRun, "n", false, "Performs a dry run")
 	fs.BoolVar(&cfg.verbose, "v", false, "Verbose")
+	fs.BoolVar(&cfg.veryVerbose, "vv", false, "Very verbose")
 	fs.StringVar(&cfg.baseDir, "C", ".", "Base dir")
 	_ = fs.Parse(args)
+
+	if cfg.veryVerbose {
+		cfg.verbose = true
+	}
 
 	targets := fs.Args()
 	if len(targets) > 0 {
@@ -82,11 +87,12 @@ type bygge struct {
 }
 
 type config struct {
-	verbose bool
-	dryRun  bool
-	baseDir string
-	byggFil string
-	target  string
+	verbose     bool
+	veryVerbose bool
+	dryRun      bool
+	baseDir     string
+	byggFil     string
+	target      string
 }
 
 func newBygg(cfg config) (*bygge, error) {
@@ -164,6 +170,11 @@ func (b *bygge) buildTarget(tgt string) error {
 	var buf bytes.Buffer
 	if err := b.tmpl.Execute(&buf, data); err != nil {
 		return err
+	}
+
+	if b.cfg.veryVerbose {
+		b.verbose(fmt.Sprintf("Script:[\n%s\n]", buf.String()))
+		buf.Reset()
 	}
 
 	b.verbose("Loading build script")
