@@ -125,7 +125,7 @@ func newBygg(cfg config) (*bygge, error) {
 				cmd := exec.Command(prog, args...)
 				cmd.Env = b.envList()
 				var output []byte
-				output, b.lastError = cmd.CombinedOutput()
+				output, b.lastError = cmd.Output()
 				return string(output)
 			},
 			"ok": func() bool {
