@@ -23,7 +23,7 @@ import (
 	"time"
 )
 
-func parseConfig(args []string) (cfg config) {
+func parseConfig(args []string) (cfg config, err error) {
 	var fs flag.FlagSet
 
 	fs.StringVar(&cfg.byggFil, "f", "byggfil", "Bygg file")
@@ -31,7 +31,7 @@ func parseConfig(args []string) (cfg config) {
 	fs.BoolVar(&cfg.verbose, "v", false, "Verbose")
 	fs.BoolVar(&cfg.veryVerbose, "vv", false, "Very verbose")
 	fs.StringVar(&cfg.baseDir, "C", ".", "Base dir")
-	_ = fs.Parse(args)
+	err = fs.Parse(args)
 
 	if cfg.veryVerbose {
 		cfg.verbose = true
@@ -48,7 +48,10 @@ func parseConfig(args []string) (cfg config) {
 }
 
 func main() {
-	cfg := parseConfig(os.Args[1:])
+	cfg, err := parseConfig(os.Args[1:])
+	if err != nil {
+		os.Exit(1)
+	}
 
 	b, err := newBygg(cfg)
 	if err != nil {
@@ -173,8 +176,7 @@ func (b *bygge) buildTarget(tgt string) error {
 	}
 
 	if b.cfg.veryVerbose {
-		b.verbose(fmt.Sprintf("Script:[\n%s\n]", buf.String()))
-		buf.Reset()
+		b.verbose(fmt.Sprintf("Script:[\n%s\n]", string(buf.Bytes())))
 	}
 
 	b.verbose("Loading build script")
@@ -404,7 +406,10 @@ func (b *bygge) runBuildCommand(tgt, command string) error {
 		return nil
 	}
 	if prog == "bygg" {
-		cfg := parseConfig(args)
+		cfg, err := parseConfig(args)
+		if err != nil {
+			return err
+		}
 		bb, err := newBygg(cfg)
 		bb.output = b.output
 		if err != nil {
