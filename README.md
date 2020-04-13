@@ -2,33 +2,33 @@
 
 # bygg!
 
-This is an attempt to get a portable way of building [Letarette](https://letarette.io), but it should work well for other `go` projects with similar needs.
+This started as a way to get portable builds for [Letarette](https://letarette.io), but it should work well for other `go` projects with similar needs.
 
-Letarette is a `go` project, but since it relies heavily on `sqlite3`, a C compiler is required. Also, the stemming is done by the `Snowball` C library which comes with a Makefile - based build.
+Letarette is a `go` project, but it relies heavily on `sqlite3` and the `Snowball` library, both C libraries.
 
 I started out using `make` and `bash`, which worked fine for a while.
 It was a couple of iterations before the Linux and Mac builds worked the same, but when I got to Windows, I hit a wall.
 
 So, I started thinking - could I script the build process in `go` instead?
 
-As usual, I let it grow a little bit too far. But - it's still just about 600 lines, including comments, and has no external dependencies.
+As usual, I let it grow a little bit too far. But - it's still below 600 lines of code, and has no external dependencies.
 
 ## The tool
 
 The `bygg` tool uses concepts similar to `make`, where the build process is described in a `byggfil` by listing dependencies and build steps. The `byggfil` is preprocessed as a `go` template, with a couple of help functions.
 
-This is obviously not `make`, and admittedly `go` templates are a bit weird, but it works really well for my needs and I've been able to simplify my build process, so I'm happy.
+This is obviously not `make`, and admittedly `go` templates are a bit weird, but it works really well for my needs and I've been able to simplify my build process, so I'm happy!
 
 ## Running a build
 
-A build is started by running the tool in the directory containing the `byggfil`.
-Since it is a single-file no-dependencies tool, running using `go run` is fast enough:
+A build is started by running the tool in a directory containing a `byggfil`.
+Since `bygg` is a no-dependencies tool, running using `go run` is fast enough:
 
 ```
 $ go run github.com/erkkah/bygg
 ```
 
-You can of course also install the tool to get even faster startup times:
+You can of course also install the tool to get faster startup times:
 
 ```
 $ go get -u github.com/erkkah/bygg
@@ -57,6 +57,7 @@ Options:
     	Bygg file (default "byggfil")
   -n	Performs a dry run
   -v	Verbose
+  -vv Very verbose
 ```
 
 The default target is "all".
@@ -107,7 +108,7 @@ If a build command starts with a URL to a `tar`, `tar.gz` or `tgz` file, that fi
 lib <- https://where.files.live/mylittle.lib.tgz md5:f8288a861db7c97dc4750020c7c7aa6f
 ```
 
-> NOTE: Downloads are considered to be up to date if the target directory is not older than the "Last-Modified" header.
+> NOTE: Downloads are considered to be up to date if the target directory is not older than the "Last-Modified" header sent from the server.
 
 #### Logging
 

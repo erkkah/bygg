@@ -19,7 +19,7 @@ func loadTestBuild(t *testing.T, file string) *bygge {
 		byggFil: file,
 		baseDir: "tests",
 	}
-	b, err := newBygg(cfg)
+	b, err := newBygge(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
