@@ -189,13 +189,6 @@ Returns boolean true if the last `exec` was successful.
 Returns the current date and time, formatted according to its argument.
 The format is passed directly to the `go` date formatter:
 
-#### split
-Splits a string by space and returns the resulting list.
-
-#### glob
-Returns a list of files matching a given pattern, using [glob](https://golang.org/pkg/path/filepath/#Glob).
-
-
 ```
 {{date "2006-01-02"}}
 ```
@@ -204,6 +197,13 @@ Remember the [magic date string](https://golang.org/pkg/time/#Time.Format): `Mon
 
 #### split
 Returns a slice of strings by splitting its argument by spaces.
+
+#### glob
+Returns a list of files matching a given pattern, using [glob](https://golang.org/pkg/path/filepath/#Glob).
+
+#### replace
+Expects three arguments, a pattern, a replacement and an operand. The operand can be either a single string or a list of strings.
+Replace runs regex replacement using [Replace](https://golang.org/pkg/regexp/#Regexp.ReplaceAllString).
 
 ## Syntax highlighting
 

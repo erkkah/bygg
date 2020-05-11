@@ -82,6 +82,23 @@ func newBygge(cfg config) (*bygge, error) {
 				}
 				return []string{}
 			},
+			"replace": func(pattern, replacement string, operands interface{}) interface{} {
+				re, err := regexp.Compile(pattern)
+				if err != nil {
+					return nil
+				}
+				if one, ok := operands.(string); ok {
+					return re.ReplaceAllString(one, replacement)
+				}
+				if many, ok := operands.([]string); ok {
+					replaced := make([]string, len(many))
+					for i, operand := range many {
+						replaced[i] = re.ReplaceAllString(operand, replacement)
+					}
+					return replaced
+				}
+				return ""
+			},
 		}
 	}
 

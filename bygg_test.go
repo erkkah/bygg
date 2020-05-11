@@ -195,3 +195,19 @@ func TestTemplates_glob(t *testing.T) {
 		expected,
 	)
 }
+
+func TestTemplates_replaceOne(t *testing.T) {
+	expected := "kawonka\n"
+	verifyTestOutput(
+		t, "templates.bygg", "replaceOne",
+		expected,
+	)
+}
+
+func TestTemplates_replaceAll(t *testing.T) {
+	expected := "[yaabbaa daabbaa doo]\n"
+	verifyTestOutput(
+		t, "templates.bygg", "replaceAll",
+		expected,
+	)
+}

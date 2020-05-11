@@ -6,3 +6,7 @@ exec << {{if ok}}OK{{else}}ERROR{{end}}
 date << {{date "2006"}}
 
 glob << {{range glob "templates.*"}}{{.}}{{end}}
+
+replaceOne << {{replace ".cpp$" "" "kawonka.cpp"}}
+
+replaceAll << {{replace "a" "$0$0" (split "yabba dabba doo")}}
