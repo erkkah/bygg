@@ -4,3 +4,5 @@ exec << {{slice (exec "go" "version" | split) 2 3}}
 exec << {{if ok}}OK{{else}}ERROR{{end}}
 
 date << {{date "2006"}}
+
+glob << {{range glob "templates.*"}}{{.}}{{end}}

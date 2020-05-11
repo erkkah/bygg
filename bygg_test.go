@@ -187,3 +187,11 @@ func TestTemplates_date(t *testing.T) {
 		expected+"\n",
 	)
 }
+
+func TestTemplates_glob(t *testing.T) {
+	expected := "templates.bygg\n"
+	verifyTestOutput(
+		t, "templates.bygg", "glob",
+		expected,
+	)
+}

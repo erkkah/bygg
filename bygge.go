@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
@@ -74,6 +75,12 @@ func newBygge(cfg config) (*bygge, error) {
 			},
 			"split": func(unsplit string) []string {
 				return strings.Split(unsplit, " ")
+			},
+			"glob": func(pattern string) []string {
+				if matches, err := filepath.Glob(pattern); err == nil {
+					return matches
+				}
+				return []string{}
 			},
 		}
 	}

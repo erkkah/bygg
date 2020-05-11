@@ -189,6 +189,13 @@ Returns boolean true if the last `exec` was successful.
 Returns the current date and time, formatted according to its argument.
 The format is passed directly to the `go` date formatter:
 
+#### split
+Splits a string by space and returns the resulting list.
+
+#### glob
+Returns a list of files matching a given pattern, using [glob](https://golang.org/pkg/path/filepath/#Glob).
+
+
 ```
 {{date "2006-01-02"}}
 ```
