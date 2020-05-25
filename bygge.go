@@ -373,10 +373,10 @@ func (b *bygge) runBuildCommand(tgt, command string) error {
 			return err
 		}
 		bb, err := newBygge(cfg)
-		bb.output = b.output
 		if err != nil {
 			return err
 		}
+		bb.output = b.output
 		return bb.buildTarget(cfg.target)
 	}
 	if strings.HasPrefix(prog, "http") {
