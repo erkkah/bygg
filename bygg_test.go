@@ -88,6 +88,7 @@ func TestVariables_C(t *testing.T) {
 }
 
 func TestEnvironmentVariable(t *testing.T) {
+	os.Setenv("HOME", "Home")
 	home := os.Getenv("HOME")
 	expected := home + " is where the heart is\n"
 	verifyTestOutput(

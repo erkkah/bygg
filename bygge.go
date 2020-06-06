@@ -393,6 +393,9 @@ func (b *bygge) runBuildCommand(tgt, command string) error {
 func (b *bygge) envList() []string {
 	env := []string{}
 	for k, v := range b.env {
+		if k == "" {
+			continue
+		}
 		env = append(env, fmt.Sprintf("%s=%s", k, v))
 	}
 	return env
