@@ -66,7 +66,7 @@ The default target is "all".
 
 ### Dependencies
 
-*Dependencies* are specified using comma - statements:
+*Dependencies* are specified using colon - statements:
 
 ```
 target: dependency1 dependency2
