@@ -1,6 +1,6 @@
 ![bygg! logo](icon.png)
 
-# bygg!
+# bygg! - a tiny build tool for building golang projects
 
 This started as a way to get portable builds for [Letarette](https://letarette.io), but it should work well for other `go` projects with similar needs.
 
