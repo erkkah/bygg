@@ -1,21 +1,40 @@
 ![bygg! logo](icon.png)
 
-# bygg! - a tiny build tool for building golang projects
+# bygg! - a tiny build tool for portable projects
 
-This started as a way to get portable builds for [Letarette](https://letarette.io), but it should work well for other `go` projects with similar needs.
+**bygg!** is a tiny build tool for maintaining portable builds for golang supported environments. It is similar to `make`, but much simpler and is guaranteed to work the same everywhere.
 
-Letarette is a `go` project, but it relies heavily on `sqlite3` and the `Snowball` library, both C libraries.
+More highlights:
 
-I started out using `make` and `bash`, which worked fine for a while.
-It was a couple of iterations before the Linux and Mac builds worked the same, but when I got to Windows, I hit a wall.
+* Nothing to download and install
+* Does not depend on the shell for a little bit of scripting
+* Can download and validate the checksum of external dependencies
+* Works great with CGO projects
 
-So, I started thinking - could I script the build process in `go` instead?
+## Getting started :rocket:
 
-As usual, I let it grow a little bit too far. But - it's still below 600 lines of code, and has no external dependencies.
+This is a silly "Hello, world" `byggfil` for a tiny project that does not need a build system:
 
-## The tool
+```bygg
+# Hello bygg file
 
-The `bygg` tool uses concepts similar to `make`, where the build process is described in a `byggfil` by listing dependencies and build steps. The `byggfil` is preprocessed as a `go` template, with a couple of help functions.
+<< Building "Hello, world" on ${GOOS}
+
+all: hello
+
+hello: hello.go
+hello <- go build hello.go
+```
+
+To start the build, run:
+
+```
+$ go run github.com/erkkah/bygg
+```
+
+## The tool :hammer:
+
+The `bygg` tool uses concepts similar to `make`, where the build process is described in a `byggfil` by listing dependencies and build steps. The `byggfil` is preprocessed as a `go` text template, with a couple of help functions.
 
 This is obviously not `make`, and admittedly `go` templates are a bit weird, but it works really well for my needs and I've been able to simplify my build process, so I'm happy!
 
@@ -34,14 +53,14 @@ You can of course also install the tool to get faster startup times:
 $ go get -u github.com/erkkah/bygg
 ```
 
-In Letarette, there is an `autoexec.go` file at the root of the project with a `go:generate` line that starts the build:
+To reduce friction even further, builds can be started with `go generate` by adding a simple `autoexec.go` file at the root of the project:
 
 ```go
-// bygg! entry point, just run "go generate" to build Letarette.
+// bygg! entry point, just run "go generate" to build
 
 //go:generate go run github.com/erkkah/bygg
 
-package letarette
+package main
 ```
 
 The `bygg` tool accepts these arguments:
@@ -152,6 +171,14 @@ Variable interpolation uses familiar `$` - syntax, with or without curly brackes
 ${MY_TARGET}: dependency $OBJFILES
 ```
 
+#### Built-in variables
+
+In addition to environment variables, the following variables are available:
+
+* GOOS
+* GOARCH
+* GOVERSION
+
 ### Template execution
 
 Before the build script is interpreted, it is run through the `go` [text template engine.](https://golang.org/pkg/text/template/)
@@ -210,3 +237,16 @@ Replace runs regex replacement using [Replace](https://golang.org/pkg/regexp/#Re
 To make it more fun to edit `bygg` files in VS Code, I put together a basic syntax highlighting package. Search for "bygg syntax highlighting" in the marketplace.
 
 You're welcome!
+
+## But why yet another build tool:question:
+
+This started as a way to get portable builds for [Letarette](https://letarette.io), but it should work well for other `go` projects with similar needs.
+
+Letarette is a `go` project, but it relies heavily on `sqlite3` and the `Snowball` library, both C libraries.
+
+I started out using `make` and `bash`, which worked fine for a while.
+It was a couple of iterations before the Linux and Mac builds worked the same, but when I got to Windows, I hit a wall.
+
+So, I started thinking - could I script the build process in `go` instead?
+
+As usual, I let it grow a little bit too far. But - it's still below 600 lines of code, and has no external dependencies.
