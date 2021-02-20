@@ -46,7 +46,7 @@ func newBygge(cfg config) (*bygge, error) {
 
 	result := &bygge{
 		targets: map[string]target{},
-		vars:    map[string]string{},
+		vars:    builtins,
 		env:     map[string]string{},
 		visited: map[string]bool{},
 		output:  os.Stdout,
@@ -124,12 +124,11 @@ func (b *bygge) buildTarget(tgt string) error {
 	}
 	defer os.Chdir(pwd)
 
-	goVersion := runtime.Version()
-
 	data := map[string]interface{}{
-		"GOVERSION": goVersion,
-		"env":       b.env,
+		"env": b.env,
 	}
+
+	addBuiltins(data)
 
 	b.verbose("Executing template")
 	var buf bytes.Buffer
@@ -399,6 +398,18 @@ func (b *bygge) envList() []string {
 		env = append(env, fmt.Sprintf("%s=%s", k, v))
 	}
 	return env
+}
+
+var builtins = map[string]string{
+	"GOVERSION": runtime.Version(),
+	"GOOS":      runtime.GOOS,
+	"GOARCH":    runtime.GOARCH,
+}
+
+func addBuiltins(vars map[string]interface{}) {
+	for k, v := range builtins {
+		vars[k] = v
+	}
 }
 
 func (b *bygge) verbose(pattern string, args ...interface{}) {

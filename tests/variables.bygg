@@ -11,3 +11,5 @@ env.HOME += "is where the heart is"
 D << ${env.HOME}
 
 E << ${env.kawonka92_unlikely_this_is_set}
+
+F << ${GOOS}

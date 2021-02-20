@@ -104,6 +104,13 @@ func TestEmptyEnvironmentVariable(t *testing.T) {
 	)
 }
 
+func TestBuiltinEnvironmentVariable(t *testing.T) {
+	verifyTestOutput(
+		t, "variables.bygg", "F",
+		fmt.Sprintf("%s\n", runtime.GOOS),
+	)
+}
+
 func TestDependencyChain_A(t *testing.T) {
 	verifyTestOutput(
 		t, "dependencies.bygg", "A",
