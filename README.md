@@ -129,6 +129,16 @@ lib <- https://where.files.live/mylittle.lib.tgz md5:f8288a861db7c97dc4750020c7c
 
 > NOTE: Downloads are considered to be up to date if the target directory is not older than the "Last-Modified" header sent from the server.
 
+#### Removing files or directories
+
+Build commands of the format `clean:path/to/file/or/dir` will remove the file/dir at the specified path.
+To delete non-empty directories, the argument `-r` has to be specified.
+
+#### Creating directories
+
+Build commands of the format `mkdir:path/to/dir` will create the specified dir and all required dirs in the path.
+If the dir already exists, nothing happens.
+
 #### Logging
 
 The special build operator `<<` prints the rest of the line to stdout:
@@ -249,4 +259,4 @@ It was a couple of iterations before the Linux and Mac builds worked the same, b
 
 So, I started thinking - could I script the build process in `go` instead?
 
-As usual, I let it grow a little bit too far. But - it's still below 600 lines of code, and has no external dependencies.
+As usual, I let it grow a little bit too far. But - it's still just above 600 lines of code, and has no external dependencies.

@@ -37,6 +37,14 @@ func runTestBuild(t *testing.T, file string, target string) string {
 	return string(capture.Bytes())
 }
 
+func verifyBuildFails(t *testing.T, file string, target string) {
+	b := loadTestBuild(t, file)
+	err := b.buildTarget(target)
+	if err == nil {
+		t.Fatal(err)
+	}
+}
+
 func verifyTestOutput(t *testing.T, file string, target string, expected string) {
 	output := runTestBuild(t, file, target)
 	if output != expected {
@@ -218,4 +226,27 @@ func TestTemplates_replaceAll(t *testing.T) {
 		t, "templates.bygg", "replaceAll",
 		expected,
 	)
+}
+
+func Test_mkdir(t *testing.T) {
+	testPath := "tests/download/a/b/c"
+	runTestBuild(t, "buildcommands.bygg", "mkdir")
+	if !exists(testPath) {
+		t.Fail()
+	}
+	runTestBuild(t, "buildcommands.bygg", "mkdir")
+	os.RemoveAll(testPath)
+}
+
+func Test_clean(t *testing.T) {
+	testPath := "tests/download/a/b/c"
+	err := os.MkdirAll(testPath, 0771)
+	if err != nil {
+		t.Fail()
+	}
+	verifyBuildFails(t, "buildcommands.bygg", "failingClean")
+	runTestBuild(t, "buildcommands.bygg", "clean")
+	if exists(testPath) {
+		t.Fail()
+	}
 }

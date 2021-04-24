@@ -146,10 +146,8 @@ func (b *bygge) buildTarget(tgt string) error {
 	}
 
 	if tgt, ok := b.targets[tgt]; ok {
-		if err := b.resolve(tgt); err != nil {
-			return err
-		}
-		return nil
+		err := b.resolve(tgt)
+		return err
 	}
 
 	return fmt.Errorf("no such target %q", tgt)
@@ -380,6 +378,12 @@ func (b *bygge) runBuildCommand(tgt, command string) error {
 	}
 	if strings.HasPrefix(prog, "http") {
 		return b.handleDownload(tgt, prog, args...)
+	}
+	if strings.HasPrefix(prog, "clean:") {
+		return b.handleClean(prog, args...)
+	}
+	if strings.HasPrefix(prog, "mkdir:") {
+		return b.handleMakeDir(prog)
 	}
 	cmd := exec.Command(prog, args...)
 	cmd.Env = b.envList()

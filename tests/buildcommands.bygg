@@ -8,3 +8,9 @@ help <- go help c
 download <- http://${env.BYGG_TEST_ADDR}/download.tgz md5:5aa185210a66bd10b682f9916b8aa75a
 
 child <- bygg -f child.bygg target
+
+mkdir <- mkdir:download/a/b/c
+
+failingClean <- clean:download/a
+
+clean <- clean:download/a -r
