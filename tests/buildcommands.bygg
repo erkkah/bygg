@@ -14,3 +14,7 @@ mkdir <- mkdir:download/a/b/c
 failingClean <- clean:download/a
 
 clean <- clean:download/a -r
+
+download/copytestA <- copy:buildcommands.bygg
+
+download/copytestB <- copy: buildcommands.bygg

@@ -6,8 +6,15 @@ import (
 	"strings"
 )
 
-func (b *bygge) handleMakeDir(cmd string) error {
+func (b *bygge) handleMakeDir(target string, cmd string, args ...string) error {
 	path := strings.TrimPrefix(cmd, "mkdir:")
+	path = strings.TrimSpace(path)
+	if len(path) == 0 {
+		if len(args) == 0 {
+			path = target
+		}
+		path = strings.TrimSpace(args[0])
+	}
 	stat, err := os.Stat(path)
 	if err == nil {
 		if !stat.IsDir() {

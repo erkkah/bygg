@@ -387,8 +387,12 @@ func (b *bygge) runBuildCommand(tgt, command string) error {
 		return b.handleClean(prog, args...)
 	}
 	if strings.HasPrefix(prog, "mkdir:") {
-		return b.handleMakeDir(prog)
+		return b.handleMakeDir(tgt, prog, args...)
 	}
+	if strings.HasPrefix(prog, "copy:") {
+		return b.handleCopy(tgt, prog, args...)
+	}
+
 	cmd := exec.Command(prog, args...)
 	cmd.Env = b.envList()
 	cmd.Stderr = b.output

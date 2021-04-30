@@ -137,7 +137,11 @@ To delete non-empty directories, the argument `-r` has to be specified.
 #### Creating directories
 
 Build commands of the format `mkdir:path/to/dir` will create the specified dir and all required dirs in the path.
-If the dir already exists, nothing happens.
+If the dir already exists, nothing happens. If no path is given, the target will be used.
+
+#### Copying files
+
+Build commands of the format `copy:path/to/file` will copy the specified file to the target.
 
 #### Logging
 
@@ -259,4 +263,4 @@ It was a couple of iterations before the Linux and Mac builds worked the same, b
 
 So, I started thinking - could I script the build process in `go` instead?
 
-As usual, I let it grow a little bit too far. But - it's still just above 600 lines of code, and has no external dependencies.
+As usual, I let it grow a little bit too far. But - it's still just below 700 lines of code, and has no external dependencies.

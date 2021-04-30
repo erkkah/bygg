@@ -257,3 +257,24 @@ func Test_clean(t *testing.T) {
 		t.Fail()
 	}
 }
+
+func Test_copy(t *testing.T) {
+	defer func() {
+		os.Remove("tests/download/copytestA")
+		os.Remove("tests/download/copytestB")
+	}()
+
+	runTestBuild(t, "buildcommands.bygg", "download/copytestA")
+	runTestBuild(t, "buildcommands.bygg", "download/copytestB")
+	fileA, err := os.ReadFile("tests/download/copytestA")
+	if err != nil {
+		t.Error(err)
+	}
+	fileB, err := os.ReadFile("tests/download/copytestB")
+	if err != nil {
+		t.Error(err)
+	}
+	if string(fileA) != string(fileB) {
+		t.Fail()
+	}
+}
