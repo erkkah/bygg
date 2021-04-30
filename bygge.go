@@ -140,8 +140,12 @@ func (b *bygge) buildTarget(tgt string) error {
 		b.verbose(fmt.Sprintf("Script:[\n%s\n]", string(buf.Bytes())))
 	}
 
+	var joined bytes.Buffer
+	lineJoiner := strings.NewReplacer("\\\n", "")
+	lineJoiner.WriteString(&joined, buf.String())
+
 	b.verbose("Loading build script")
-	if err := b.loadBuildScript(&buf); err != nil {
+	if err := b.loadBuildScript(&joined); err != nil {
 		return err
 	}
 

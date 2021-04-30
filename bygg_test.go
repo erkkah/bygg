@@ -74,6 +74,13 @@ func TestLogging_Newlines(t *testing.T) {
 	)
 }
 
+func TestLogging_LineContinuation(t *testing.T) {
+	verifyTestOutput(
+		t, "logging.bygg", "C",
+		"message:\nHi Ho\n",
+	)
+}
+
 func TestVariables_A(t *testing.T) {
 	verifyTestOutput(
 		t, "variables.bygg", "A",
