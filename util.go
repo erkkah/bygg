@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -71,4 +72,12 @@ func getFileDate(target string) time.Time {
 		return time.Time{}
 	}
 	return fileInfo.ModTime()
+}
+
+func cleanPaths(paths ...string) []string {
+	result := make([]string, len(paths))
+	for i, path := range paths {
+		result[i] = filepath.Clean(path)
+	}
+	return result
 }

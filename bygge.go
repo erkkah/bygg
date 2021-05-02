@@ -60,11 +60,16 @@ func newBygge(cfg config) (*bygge, error) {
 
 	getFunctions := func(b *bygge) template.FuncMap {
 		return template.FuncMap{
+			"env": func(name string, value string) string {
+				b.env[name] = value
+				return value
+			},
 			"exec": func(prog string, args ...string) string {
 				cmd := exec.Command(prog, args...)
 				cmd.Env = b.envList()
 				var output []byte
 				output, b.lastError = cmd.Output()
+				b.verbose("Template executed %v %v, result=%v", prog, args, b.lastError)
 				return string(output)
 			},
 			"ok": func() bool {
@@ -76,11 +81,14 @@ func newBygge(cfg config) (*bygge, error) {
 			"split": func(unsplit string) []string {
 				return strings.Split(unsplit, " ")
 			},
-			"glob": func(pattern string) []string {
-				if matches, err := filepath.Glob(pattern); err == nil {
-					return matches
+			"glob": func(patterns ...string) []string {
+				result := []string{}
+				for _, pattern := range patterns {
+					if matches, err := filepath.Glob(pattern); err == nil {
+						result = append(result, matches...)
+					}
 				}
-				return []string{}
+				return result
 			},
 			"replace": func(pattern, replacement string, operands interface{}) interface{} {
 				re, err := regexp.Compile(pattern)
@@ -226,8 +234,9 @@ func (b *bygge) loadBuildScript(scriptSource io.Reader) error {
 }
 
 func (b *bygge) handleDependencies(lvalue, rvalue string) error {
-	t := b.targets[lvalue]
-	t.name = lvalue
+	clean := cleanPaths(lvalue)[0]
+	t := b.targets[clean]
+	t.name = clean
 	rvalue = strings.TrimLeft(rvalue, " \t")
 	if strings.HasPrefix(rvalue, "!") {
 		t.force = true
@@ -237,8 +246,9 @@ func (b *bygge) handleDependencies(lvalue, rvalue string) error {
 	if err != nil {
 		return err
 	}
+	dependencies = cleanPaths(dependencies...)
 	t.dependencies = append(t.dependencies, dependencies...)
-	b.targets[lvalue] = t
+	b.targets[clean] = t
 
 	return nil
 }
@@ -267,10 +277,11 @@ func (b *bygge) handleAssignment(lvalue, rvalue string, add bool) error {
 }
 
 func (b *bygge) handleBuildCommand(lvalue, rvalue string) {
-	t := b.targets[lvalue]
-	t.name = lvalue
+	clean := cleanPaths(lvalue)[0]
+	t := b.targets[clean]
+	t.name = clean
 	t.buildCommands = append(t.buildCommands, rvalue)
-	b.targets[lvalue] = t
+	b.targets[clean] = t
 }
 
 // Permissive variable expansion
@@ -332,6 +343,9 @@ func (b *bygge) resolve(t target) error {
 	}
 
 	if t.force || !exists(t.name) || getFileDate(t.name).Before(mostRecentUpdate) {
+		if len(t.buildCommands) == 0 {
+			b.verbose("No build command for target %q, skipping build", t.name)
+		}
 		for _, cmd := range t.buildCommands {
 			if err := b.runBuildCommand(t.name, cmd); err != nil {
 				return err
