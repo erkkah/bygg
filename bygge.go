@@ -72,6 +72,12 @@ func newBygge(cfg config) (*bygge, error) {
 				b.verbose("Template executed %v %v, result=%v", prog, args, b.lastError)
 				return string(output)
 			},
+			"check": func(input string) (string, error) {
+				if b.lastError != nil {
+					return "", b.lastError
+				}
+				return input, nil
+			},
 			"ok": func() bool {
 				return b.lastError == nil
 			},
