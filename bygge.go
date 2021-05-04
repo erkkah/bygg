@@ -166,8 +166,23 @@ func (b *bygge) buildTarget(tgt string) error {
 	}
 
 	if tgt, ok := b.targets[tgt]; ok {
-		err := b.resolve(tgt)
-		return err
+		for {
+			err := b.resolve(tgt)
+			if b.cfg.watch {
+				b.unresolve()
+				if err != nil {
+					fmt.Printf("%v\n", err)
+				}
+				fmt.Println("Waiting for changes")
+				err = b.waitForChange(tgt)
+				if err != nil {
+					return err
+				}
+				fmt.Println("Detected change, rebuilding...")
+			} else {
+				return err
+			}
+		}
 	}
 
 	return fmt.Errorf("no such target %q", tgt)
