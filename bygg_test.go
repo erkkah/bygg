@@ -203,6 +203,10 @@ func TestTemplates_exec(t *testing.T) {
 	)
 }
 
+func TestTemplates_mustexec(t *testing.T) {
+	verifyBuildFails(t, "mustexec.bygg", "mustexec")
+}
+
 func TestTemplates_date(t *testing.T) {
 	expected := time.Now().Format("2006")
 	verifyTestOutput(

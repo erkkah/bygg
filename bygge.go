@@ -58,26 +58,28 @@ func newBygge(cfg config) (*bygge, error) {
 		result.env[parts[0]] = parts[1]
 	}
 
+	genExec := func(b *bygge, validate bool) func(string, ...string) (string, error) {
+		return func(prog string, args ...string) (string, error) {
+			cmd := exec.Command(prog, args...)
+			cmd.Env = b.envList()
+			var output []byte
+			output, b.lastError = cmd.Output()
+			if b.lastError != nil && validate {
+				return "", b.lastError
+			}
+			b.verbose("Template executed %v %v, result=%v", prog, args, b.lastError)
+			return string(output), nil
+		}
+	}
+
 	getFunctions := func(b *bygge) template.FuncMap {
 		return template.FuncMap{
 			"env": func(name string, value string) string {
 				b.env[name] = value
 				return value
 			},
-			"exec": func(prog string, args ...string) string {
-				cmd := exec.Command(prog, args...)
-				cmd.Env = b.envList()
-				var output []byte
-				output, b.lastError = cmd.Output()
-				b.verbose("Template executed %v %v, result=%v", prog, args, b.lastError)
-				return string(output)
-			},
-			"check": func(input string) (string, error) {
-				if b.lastError != nil {
-					return "", b.lastError
-				}
-				return input, nil
-			},
+			"exec":     genExec(b, false),
+			"mustexec": genExec(b, true),
 			"ok": func() bool {
 				return b.lastError == nil
 			},
