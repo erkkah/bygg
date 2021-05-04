@@ -9,6 +9,7 @@ More highlights:
 * Nothing to download and install
 * Does not depend on the shell for a little bit of scripting
 * Can download and validate the checksum of external dependencies
+* Automatically rebuilds targets on dependency changes using watch mode
 * Works great with CGO projects
 
 ## Getting started :rocket:
@@ -75,11 +76,19 @@ Options:
   -f string
     	Bygg file (default "byggfil")
   -n	Performs a dry run
+  -w  Watch mode
   -v	Verbose
   -vv Very verbose
 ```
 
 The default target is "all".
+
+### Watch mode
+
+In watch mode, `bygg` will perform an initial build, and then wait for changes.
+When changes are detected, it will automatically build outdated targets.
+
+> Note that watch mode kicks in after template execution.
 
 ## `byggfil` syntax
 
@@ -223,6 +232,9 @@ In addition to the [standard functions](https://golang.org/pkg/text/template/#hd
 #### exec
 Returns the output of running the command specified by the first argument, with the rest of the arguments as command line arguments.
 
+#### mustexec
+Same as `exec`, but exits with failure if the command fails.
+
 #### ok
 Returns boolean true if the last `exec` was successful.
 
@@ -241,6 +253,10 @@ Returns a slice of strings by splitting its argument by spaces.
 
 #### glob
 Returns a list of files matching a given pattern, using [glob](https://golang.org/pkg/path/filepath/#Glob).
+Accepts several glob patterns.
+```
+ASSETS={{range glob "assets/*"}}{{.}} {{end}}
+```
 
 #### replace
 Expects three arguments, a pattern, a replacement and an operand. The operand can be either a single string or a list of strings.
@@ -263,4 +279,4 @@ It was a couple of iterations before the Linux and Mac builds worked the same, b
 
 So, I started thinking - could I script the build process in `go` instead?
 
-As usual, I let it grow a little bit too far. But - it's still just below 700 lines of code, and has no external dependencies.
+As usual, I let it grow a little bit too far. But - it's still well below 1000 lines of code, and has no external dependencies.
