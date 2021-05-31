@@ -58,9 +58,20 @@ func newBygge(cfg config) (*bygge, error) {
 		result.env[parts[0]] = parts[1]
 	}
 
-	genExec := func(b *bygge, validate bool) func(string, ...string) (string, error) {
-		return func(prog string, args ...string) (string, error) {
-			cmd := exec.Command(prog, args...)
+	genExec := func(b *bygge, validate bool) func(string, ...interface{}) (string, error) {
+		return func(prog string, args ...interface{}) (string, error) {
+			argStrings := []string{}
+			for _, arg := range args {
+				switch v := arg.(type) {
+				case string:
+					argStrings = append(argStrings, v)
+				case []string:
+					argStrings = append(argStrings, v...)
+				default:
+					return "", fmt.Errorf("unsupported arg: %q", v)
+				}
+			}
+			cmd := exec.Command(prog, argStrings...)
 			cmd.Env = b.envList()
 			var output []byte
 			output, b.lastError = cmd.Output()
