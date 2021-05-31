@@ -76,6 +76,9 @@ func newBygge(cfg config) (*bygge, error) {
 			var output []byte
 			output, b.lastError = cmd.Output()
 			if b.lastError != nil && validate {
+				if exitError, ok := b.lastError.(*exec.ExitError); ok {
+					b.verbose("%s", string(exitError.Stderr))
+				}
 				return "", b.lastError
 			}
 			b.verbose("Template executed %v %v, result=%v", prog, args, b.lastError)
