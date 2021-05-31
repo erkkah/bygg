@@ -49,7 +49,7 @@ func (b *bygge) handleDownload(target string, url string, checksum ...string) er
 		}
 	}
 
-	if err = os.MkdirAll(target, 0770); err != nil {
+	if err = os.MkdirAll(target, 0771); err != nil {
 		return err
 	}
 
