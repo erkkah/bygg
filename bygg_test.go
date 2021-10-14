@@ -193,6 +193,10 @@ func TestTemplates_split(t *testing.T) {
 		t, "templates.bygg", "split",
 		"[b]\n",
 	)
+	verifyTestOutput(
+		t, "templates.bygg", "splitBy",
+		"[c]\n",
+	)
 }
 
 func TestTemplates_join(t *testing.T) {

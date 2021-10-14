@@ -100,8 +100,12 @@ func newBygge(cfg config) (*bygge, error) {
 			"date": func(layout string) string {
 				return time.Now().Format(layout)
 			},
-			"split": func(unsplit string) []string {
-				return strings.Split(unsplit, " ")
+			"split": func(unsplit string, splitArg ...string) []string {
+				splitter := " "
+				if len(splitArg) > 0 {
+					splitter = splitArg[0]
+				}
+				return strings.Split(unsplit, splitter)
 			},
 			"join": func(array []string, joinArg ...string) string {
 				joiner := " "

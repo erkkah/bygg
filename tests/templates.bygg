@@ -1,5 +1,7 @@
 split << {{slice (split "a b c") 1 2}}
 
+splitBy << {{slice (split "abc" "b") 1 2}}
+
 join << {{join (split "x y z")}}
 
 joinWith << {{join (split "x y z") ","}}
