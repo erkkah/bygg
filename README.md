@@ -249,7 +249,15 @@ The format is passed directly to the `go` date formatter:
 Remember the [magic date string](https://golang.org/pkg/time/#Time.Format): `Mon Jan 2 15:04:05 -0700 MST 2006`.
 
 #### split
-Returns a slice of strings by splitting its argument by spaces.
+Returns a slice of strings by splitting its argument by a given string, or space if not specified.
+
+```
+{{split "1,2,3"  ","}}
+```
+
+#### join
+Returns a string by joining its slice argument with a given string, or space if not specified.
+
 
 #### glob
 Returns a list of files matching a given pattern, using [glob](https://golang.org/pkg/path/filepath/#Glob).
