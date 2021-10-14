@@ -1,5 +1,9 @@
 split << {{slice (split "a b c") 1 2}}
 
+join << {{join (split "x y z")}}
+
+joinWith << {{join (split "x y z") ","}}
+
 exec << {{slice (exec "go" "version" | split) 2 3}}
 exec << {{if ok}}OK{{else}}ERROR{{end}}
 

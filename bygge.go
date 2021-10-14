@@ -103,6 +103,13 @@ func newBygge(cfg config) (*bygge, error) {
 			"split": func(unsplit string) []string {
 				return strings.Split(unsplit, " ")
 			},
+			"join": func(array []string, joinArg ...string) string {
+				joiner := " "
+				if len(joinArg) > 0 {
+					joiner = joinArg[0]
+				}
+				return strings.Join(array, joiner)
+			},
 			"glob": func(patterns ...string) []string {
 				result := []string{}
 				for _, pattern := range patterns {

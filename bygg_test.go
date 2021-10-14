@@ -195,6 +195,17 @@ func TestTemplates_split(t *testing.T) {
 	)
 }
 
+func TestTemplates_join(t *testing.T) {
+	verifyTestOutput(
+		t, "templates.bygg", "join",
+		"x y z\n",
+	)
+	verifyTestOutput(
+		t, "templates.bygg", "joinWith",
+		"x,y,z\n",
+	)
+}
+
 func TestTemplates_exec(t *testing.T) {
 	expected := fmt.Sprintf("[%s]\nOK\n", runtime.Version())
 	verifyTestOutput(
