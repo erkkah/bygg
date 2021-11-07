@@ -72,12 +72,12 @@ Usage:
 
 Options:
   -C string
-    	Base dir (default ".")
+      Base dir (default ".")
   -f string
-    	Bygg file (default "byggfil")
-  -n	Performs a dry run
+      Bygg file (default "byggfil")
+  -n  Performs a dry run
   -w  Watch mode
-  -v	Verbose
+  -v  Verbose
   -vv Very verbose
 ```
 
@@ -89,6 +89,16 @@ In watch mode, `bygg` will perform an initial build, and then wait for changes.
 When changes are detected, it will automatically build outdated targets.
 
 > Note that watch mode kicks in after template execution.
+
+### Version check
+
+Since v0.6.0 `bygg` supports verification of the tool version in the `byggfil`:
+
+```
+## bygg: ^0.6.0
+```
+
+The version requirement line must be the first line of the file and supports the version check prefixes `=`, `~` and `^`. In contrast with other tools there is no special treatment of `0.x.x` versions.
 
 ## `byggfil` syntax
 
@@ -229,6 +239,22 @@ The template data object is a map containing the environment and current `go` ve
 
 In addition to the [standard functions](https://golang.org/pkg/text/template/#hdr-Functions), `bygg` adds the following:
 
+#### env
+Without arguments, returns the environment map. Equivalent to the `.env` data object field, except that it works in nested templates
+as well.
+
+With one argument, retrieves the given environment variable:
+
+```
+{{env "PATH"}}
+```
+
+With two arguments, sets the specified environment variable:
+
+```
+{{env "PATH" "/a/new/path"}}
+```
+
 #### exec
 Returns the output of running the command specified by the first argument, with the rest of the arguments as command line arguments.
 
@@ -275,6 +301,48 @@ Replace runs regex replacement using [Replace](https://golang.org/pkg/regexp/#Re
 To make it more fun to edit `bygg` files in VS Code, I put together a basic syntax highlighting package. Search for "bygg syntax highlighting" in the marketplace.
 
 You're welcome!
+
+## C/C++ dependency check example
+
+The following template uses the `g++` / `clang` -flags `-MM` and `-MT` to insert auto-generated dependencies:
+
+```
+{{-
+/**
+    "depbuild"
+    Dependency build template, expects a string of comma-separated args:
+    <module>, <source pattern>
+**/
+-}}
+{{define "depbuild"}}
+
+    {{$args := split . ","}}
+    {{$module := index $args 0}}
+    {{$sourcePattern := index $args 1}}
+    {{$extraBuildFlags := index $args 2}}
+
+    {{$env := (env)}}
+
+    {{range glob $sourcePattern}}
+        {{$src := .}}
+        {{$pre := printf "%s/%s" $env.BUILD (replace "/" "_" $src)}}
+        {{$obj := (replace ".c(pp)?$" ".o" $pre)}}
+        {{$module}}_objects+={{$obj}}
+        # Dependency magic
+        {{mustexec $env.CPP (split $env.CPPFLAGS) "-MM" "-MT" $obj $src}}
+        {{$obj}} <- {{$env.CPP}} {{$env.CPPFLAGS}} -c -o {{$obj}} {{$src}}
+    {{end}}
+
+{{end}}
+{{/* depbuild */}}
+```
+
+In this example, the environment variables `CPP` and `CPPFLAGS` have been set up before invoking the template:
+```
+{{template "depbuild" "myproj,myproj/*.c"}}
+
+myproj: $myproj_objects
+```
 
 ## But why yet another build tool:question:
 

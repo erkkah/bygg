@@ -37,6 +37,33 @@ type target struct {
 	modifiedAt    time.Time
 }
 
+func verifyVersion(byggFile string) error {
+	if Tag == "" {
+		return nil
+	}
+
+	f, err := os.Open(byggFile)
+	if err != nil {
+		return err
+	}
+	scanner := bufio.NewScanner(f)
+	scanner.Scan()
+	firstLine := scanner.Text()
+	if strings.HasPrefix(firstLine, "##") {
+		firstLine = strings.TrimSpace(firstLine[2:])
+		if strings.HasPrefix(firstLine, "bygg:") {
+			ok, err := isVersionCompatible(firstLine, Tag)
+			if err != nil {
+				return fmt.Errorf("failed to check file version: %w", err)
+			}
+			if !ok {
+				return fmt.Errorf("Incompatible bygg version %q, required %q", Tag, firstLine)
+			}
+		}
+	}
+	return nil
+}
+
 func newBygge(cfg config) (*bygge, error) {
 	pwd, _ := os.Getwd()
 	if err := os.Chdir(cfg.baseDir); err != nil {
@@ -51,6 +78,10 @@ func newBygge(cfg config) (*bygge, error) {
 		visited: map[string]bool{},
 		output:  os.Stdout,
 		cfg:     cfg,
+	}
+
+	if err := verifyVersion(cfg.byggFil); err != nil {
+		return nil, err
 	}
 
 	for _, pair := range os.Environ() {

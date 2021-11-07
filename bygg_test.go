@@ -14,23 +14,26 @@ import (
 
 var capture bytes.Buffer
 
-func loadTestBuild(t *testing.T, file string) *bygge {
+func loadTestBuild(file string) (*bygge, error) {
 	var cfg = config{
 		byggFil: file,
 		baseDir: "tests",
 	}
 	b, err := newBygge(cfg)
 	if err != nil {
-		t.Fatal(err)
+		return nil, err
 	}
 	b.output = &capture
 	capture.Reset()
-	return b
+	return b, nil
 }
 
 func runTestBuild(t *testing.T, file string, target string) string {
-	b := loadTestBuild(t, file)
-	err := b.buildTarget(target)
+	b, err := loadTestBuild(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = b.buildTarget(target)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -38,8 +41,11 @@ func runTestBuild(t *testing.T, file string, target string) string {
 }
 
 func verifyBuildFails(t *testing.T, file string, target string) {
-	b := loadTestBuild(t, file)
-	err := b.buildTarget(target)
+	b, err := loadTestBuild(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = b.buildTarget(target)
 	if err == nil {
 		t.Fatal(err)
 	}
@@ -53,8 +59,11 @@ func verifyTestOutput(t *testing.T, file string, target string, expected string)
 }
 
 func TestEmptyBuild(t *testing.T) {
-	b := loadTestBuild(t, "empty.bygg")
-	err := b.buildTarget("all")
+	b, err := loadTestBuild("empty.bygg")
+	if err != nil {
+		t.Fail()
+	}
+	err = b.buildTarget("all")
 	if err == nil {
 		t.Fail()
 	}
@@ -296,4 +305,20 @@ func Test_copy(t *testing.T) {
 	if string(fileA) != string(fileB) {
 		t.Fail()
 	}
+}
+
+func Test_emptyVersion(t *testing.T) {
+	Tag = ""
+	verifyTestOutput(t, "version.bygg", "version", "OK\n")
+}
+
+func Test_version(t *testing.T) {
+	Tag = "v1.0.0"
+	_, err := loadTestBuild("version.bygg")
+	if err == nil {
+		t.Fail()
+	}
+
+	Tag = "v2.1.3"
+	verifyTestOutput(t, "version.bygg", "version", "OK\n")
 }
