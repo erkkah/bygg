@@ -88,9 +88,19 @@ func newBygge(cfg config) (*bygge, error) {
 
 	getFunctions := func(b *bygge) template.FuncMap {
 		return template.FuncMap{
-			"env": func(name string, value string) string {
-				b.env[name] = value
-				return value
+			"env": func(args ...string) (interface{}, error) {
+				switch len(args) {
+				case 0:
+					return b.env, nil
+				case 1:
+					return b.env[args[0]], nil
+				case 2:
+					value := args[1]
+					b.env[args[0]] = value
+					return value, nil
+				default:
+					return "", fmt.Errorf("Too many arguments to 'env'")
+				}
 			},
 			"exec":     genExec(b, false),
 			"mustexec": genExec(b, true),
