@@ -85,7 +85,7 @@ func newBygge(cfg config) (*bygge, error) {
 	}
 
 	for _, pair := range os.Environ() {
-		parts := strings.Split(pair, "=")
+		parts := strings.SplitN(pair, "=", 2)
 		result.env[parts[0]] = parts[1]
 	}
 
@@ -108,7 +108,7 @@ func newBygge(cfg config) (*bygge, error) {
 			output, b.lastError = cmd.Output()
 			if b.lastError != nil && validate {
 				if exitError, ok := b.lastError.(*exec.ExitError); ok {
-					b.verbose("%s", string(exitError.Stderr))
+					b.verbose("Template executed %v %v, result=%s", prog, args, string(exitError.Stderr))
 				}
 				return "", b.lastError
 			}
