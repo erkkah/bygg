@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -9,7 +10,7 @@ import (
 func (b *bygge) handleClean(cmd string, args ...string) error {
 	path := strings.TrimPrefix(cmd, "clean:")
 	stat, err := os.Stat(path)
-	if err != nil {
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
 	if stat == nil {
