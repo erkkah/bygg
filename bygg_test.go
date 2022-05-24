@@ -308,17 +308,17 @@ func Test_copy(t *testing.T) {
 }
 
 func Test_emptyVersion(t *testing.T) {
-	Tag = ""
+	FallbackTag = ""
 	verifyTestOutput(t, "version.bygg", "version", "OK\n")
 }
 
 func Test_version(t *testing.T) {
-	Tag = "v1.0.0"
+	FallbackTag = "v1.0.0"
 	_, err := loadTestBuild("version.bygg")
 	if err == nil {
 		t.Fail()
 	}
 
-	Tag = "v2.1.3"
+	FallbackTag = "v2.1.3"
 	verifyTestOutput(t, "version.bygg", "version", "OK\n")
 }

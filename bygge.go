@@ -38,7 +38,8 @@ type target struct {
 }
 
 func verifyVersion(byggFile string) error {
-	if Tag == "" {
+	tag := BuildTag()
+	if tag == "" {
 		return nil
 	}
 
@@ -52,12 +53,12 @@ func verifyVersion(byggFile string) error {
 	if strings.HasPrefix(firstLine, "##") {
 		firstLine = strings.TrimSpace(firstLine[2:])
 		if strings.HasPrefix(firstLine, "bygg:") {
-			ok, err := isVersionCompatible(firstLine, Tag)
+			ok, err := isVersionCompatible(firstLine, tag)
 			if err != nil {
 				return fmt.Errorf("failed to check file version: %w", err)
 			}
 			if !ok {
-				return fmt.Errorf("Incompatible bygg version %q, required %q", Tag, firstLine)
+				return fmt.Errorf("Incompatible bygg version %q, required %q", tag, firstLine)
 			}
 		}
 	}

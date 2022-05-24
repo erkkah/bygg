@@ -1,6 +1,9 @@
 package main
 
-import "flag"
+import (
+	"flag"
+	"fmt"
+)
 
 type config struct {
 	verbose     bool
@@ -25,6 +28,10 @@ func parseConfig(args []string) (cfg config, err error) {
 
 	if cfg.veryVerbose {
 		cfg.verbose = true
+	}
+
+	if cfg.verbose {
+		fmt.Printf("Bygg version %v\n", BuildTag())
 	}
 
 	targets := fs.Args()

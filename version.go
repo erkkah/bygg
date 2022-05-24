@@ -1,16 +1,21 @@
 package main
 
 import (
-	"fmt"
+	"regexp"
 	"runtime/debug"
 )
 
-// Tag is set to the current git tag, or empty for dev version
-// ??? Update this when / if this makes it into a release: https://github.com/golang/go/issues/49168
-var Tag = "v0.6.0"
+// FallbackTag is used when there is no version in build info
+var FallbackTag = "v0.6.0"
 
-func init() {
+func BuildTag() string {
 	if info, ok := debug.ReadBuildInfo(); ok {
-		fmt.Printf("Build info: %v\n", info)
+		version := info.Main.Version
+		parser := regexp.MustCompile(`^(v\d+[.]\d+.\d+).*`)
+		match := parser.FindSubmatch([]byte(version))
+		if match != nil {
+			return string(match[1])
+		}
 	}
+	return FallbackTag
 }
