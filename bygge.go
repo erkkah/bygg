@@ -102,17 +102,20 @@ func newBygge(cfg config) (*bygge, error) {
 					return "", fmt.Errorf("unsupported arg: %q", v)
 				}
 			}
+			for i, v := range argStrings {
+				argStrings[i] = strings.TrimSpace(v)
+			}
 			cmd := exec.Command(prog, argStrings...)
 			cmd.Env = b.envList()
 			var output []byte
 			output, b.lastError = cmd.Output()
 			if b.lastError != nil && validate {
 				if exitError, ok := b.lastError.(*exec.ExitError); ok {
-					b.verbose("Template executed %v %v, result=%s", prog, args, string(exitError.Stderr))
+					b.verbose("Template executed %v %v, result=%s", prog, argStrings, string(exitError.Stderr))
 				}
 				return "", b.lastError
 			}
-			b.verbose("Template executed %v %v, result=%v", prog, args, b.lastError)
+			b.verbose("Template executed %v %v, result=%v", prog, argStrings, b.lastError)
 			return string(output), nil
 		}
 	}
@@ -142,11 +145,10 @@ func newBygge(cfg config) (*bygge, error) {
 				return time.Now().Format(layout)
 			},
 			"split": func(unsplit string, splitArg ...string) []string {
-				splitter := " "
 				if len(splitArg) > 0 {
-					splitter = splitArg[0]
+					return strings.Split(unsplit, splitArg[0])
 				}
-				return strings.Split(unsplit, splitter)
+				return strings.Fields(unsplit)
 			},
 			"join": func(array []string, joinArg ...string) string {
 				joiner := " "
